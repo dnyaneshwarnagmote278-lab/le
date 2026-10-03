@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HANDTRACK//05 — Hand Gesture LED Control</title>
+<style>
+:root{--bg:#0a0d12;--c:#121821;--bd:#243041;--tx:#e6edf6;--mut:#8493a8;--ac:#b6ff3c;--ac2:#35d0ff;--bad:#ff4d5e}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,sans-serif;background-image:radial-gradient(circle at 15% 0,#16324a55,transparent 45%),radial-gradient(circle at 90% 20%,#2a4a1455,transparent 40%)}
+.mono,code,pre,.tag{font-family:ui-monospace,Consolas,monospace}
+nav{position:sticky;top:0;z-index:9;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:12px 5vw;background:#0a0d12dd;backdrop-filter:blur(10px);border-bottom:1px solid var(--bd)}
+nav b{letter-spacing:.08em;margin-right:auto;color:var(--ac)}nav a{color:var(--mut);text-decoration:none;font-size:14px}nav a:hover{color:var(--ac)}
+section{padding:70px 5vw;max-width:1180px;margin:0 auto}
+.tag{color:var(--ac);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(34px,6vw,64px);line-height:1.05;margin:10px 0}h1 em{color:var(--ac);font-style:normal}h2{font-size:clamp(26px,4vw,38px);margin:8px 0 12px}
+p.lead{color:var(--mut);max-width:62ch}
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:30px;align-items:center}@media(max-width:820px){.hero,.live{grid-template-columns:1fr!important}}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--c);color:var(--tx);padding:10px 16px;border-radius:10px;text-decoration:none;display:inline-block;transition:.2s}
+button:hover,.btn:hover{border-color:var(--ac);transform:translateY(-2px)}button:active{transform:scale(.96)}
+.pri{background:var(--ac);color:#0a0d12;border-color:var(--ac);font-weight:700}.on{background:var(--ac);color:#0a0d12;border-color:var(--ac)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.panel{background:var(--c);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.num{font:700 clamp(70px,12vw,120px)/1 ui-monospace,Consolas,monospace;color:var(--ac);text-shadow:0 0 30px #b6ff3c66}.num small{font-size:.3em;color:var(--mut)}
+.bump{animation:bump .4s cubic-bezier(.3,1.8,.5,1)}@keyframes bump{0%{transform:scale(.6);opacity:.3}100%{transform:scale(1)}}
+.lamps{display:flex;gap:12px;margin:14px 0}.lamp{flex:1;text-align:center;font:12px ui-monospace,monospace;color:var(--mut)}
+.lamp i{display:block;width:100%;max-width:46px;aspect-ratio:1;border-radius:50%;margin:0 auto 6px;background:#1b2330;border:1px solid var(--bd);transition:background .35s,box-shadow .35s,transform .35s}
+.lamp.on i{background:radial-gradient(circle at 35% 30%,#f3ffd6,var(--ac));box-shadow:0 0 26px 8px #b6ff3c88;transform:scale(1.1);border-color:var(--ac)}
+.rig{display:flex;gap:10px;align-items:flex-end;justify-content:center;height:150px}.rig i{width:28px;border-radius:14px 14px 6px 6px;background:#1b2330;height:40px;transition:height .45s cubic-bezier(.3,1.5,.5,1),background .3s}.rig i.up{height:120px;background:linear-gradient(var(--ac),#5a8f10)}.rig i:first-child{height:34px}.rig i:first-child.up{height:80px}
+.live{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
+.cam{position:relative;background:#04060a;border-radius:12px;overflow:hidden;aspect-ratio:4/3;border:1px solid var(--bd)}
+.cam video,.cam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.cam .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);text-align:center;padding:12px}
+.cam.live::before{content:"";position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:scan 2.4s linear infinite;z-index:2}@keyframes scan{from{top:0}to{top:100%}}
+.chip{display:inline-flex;align-items:center;gap:7px;font:13px ui-monospace,monospace;padding:6px 12px;border:1px solid var(--bd);border-radius:20px;margin:3px 6px 3px 0}.chip i{width:9px;height:9px;border-radius:50%;background:var(--bad)}.chip.ok i{background:var(--ac);box-shadow:0 0 8px var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:20px}.card h3{margin:6px 0;font-size:18px}.card p{color:var(--mut);margin:0;font-size:14px}.card .n{color:var(--ac);font:13px ui-monospace,monospace}
+table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid var(--bd);text-align:left}tr.hl td{background:#b6ff3c14;color:var(--ac)}
+pre{background:#05070a;border:1px solid var(--bd);border-radius:12px;padding:14px;overflow-x:auto;font-size:13px;margin:8px 0}
+#toast{position:fixed;right:14px;bottom:14px;background:var(--bad);color:#fff;padding:12px 16px;border-radius:10px;display:none;max-width:340px;z-index:20}
+footer{text-align:center;color:var(--mut);padding:40px 5vw;border-top:1px solid var(--bd)}
+.wire{stroke:#2c3a4f;stroke-width:3;fill:none}.wire.on{stroke:var(--ac);stroke-dasharray:8 6;animation:dash .5s linear infinite}@keyframes dash{to{stroke-dashoffset:-14}}
+.wl{fill:#1b2330;stroke:#2c3a4f;transition:.35s}.wl.on{fill:var(--ac);filter:drop-shadow(0 0 8px var(--ac))}svg text{fill:var(--tx);font:12px ui-monospace,monospace}
+</style></head><body>
+<nav><b>HANDTRACK//05</b><a href="#live">Try it live</a><a href="#how">How it works</a><a href="#gestures">Gestures</a><a href="#roadmap">Features</a><a href="#wiring">Wiring</a><a href="#code">Code</a></nav>
+
+<section class="hero" id="top"><div>
+ <div class="tag">Webcam · MediaPipe · Arduino</div>
+ <h1>Count to five with your hand. <em>Five LEDs count with you.</em></h1>
+ <p class="lead">A real-time hand tracking website that counts the fingers you hold up and sends the number straight to an Arduino over USB serial — no buttons, no gloves.</p>
+ <div class="row"><a class="btn pri" href="#live">Try it live</a><a class="btn" href="#wiring">See the wiring →</a></div></div>
+ <div class="panel"><div class="tag">hand_landmarks.js · tracking</div><div class="rig" id="rigH"></div>
+  <div class="num" style="text-align:center"><span class="cnt">0</span> <small>/ 5</small></div><div class="lamps lampset"></div></div>
+</section>
+
+<section id="live"><div class="tag">Try it now</div><h2>Point your webcam at your hand</h2>
+<p class="lead">Tracking runs in your browser — video never leaves your device. Enable the camera, hold up fingers, and connect the Arduino to light real LEDs.</p>
+<div class="live" style="margin-top:20px"><div class="panel">
+ <div class="cam" id="camBox"><video id="vid" playsinline muted></video><canvas id="cv"></canvas><div class="ph" id="ph">Camera preview appears here once enabled</div></div>
+ <div class="row"><button class="pri" id="camBtn" onclick="toggleCam()">Enable camera</button><button class="pri" id="serBtn" onclick="toggleSerial()">Connect Arduino</button><button onclick="demo()" id="demoBtn">Demo</button></div>
+ <div><span class="chip" id="c-cam"><i></i>Camera: off</span><span class="chip" id="c-ard"><i></i>Arduino: not connected</span><span class="chip" id="c-hand"><i></i>Hand: none</span><span class="chip" id="c-rep"><i></i>Arduino reply: —</span></div>
+ <label class="mut" style="font-size:13px;color:var(--mut)"><input type="checkbox" id="allp"> Show all serial ports (tick if Arduino is not listed)</label>
+</div><div class="panel">
+ <div class="tag">Fingers</div><div class="num"><span class="cnt" id="cnt">0</span> <small>/ 5</small></div>
+ <div class="lamps lampset"></div>
+ <div class="tag">Mode</div><div class="row"><button id="mA" onclick="setMode('A')">A · Single LED</button><button id="mB" onclick="setMode('B')" class="on">B · Level meter</button></div>
+ <div class="tag">LED effect</div><div class="row"><button id="eS" onclick="setEff('steady')" class="on">Steady</button><button id="eB" onclick="setEff('blink')">Blink</button><button id="eC" onclick="setEff('chase')">Chase</button></div>
+ <div class="tag">Test without camera</div><div class="row" id="sim"></div>
+ <div class="tag">Hardware test (no camera needed)</div><div class="row" id="hw"></div>
+ <div class="mono" style="font-size:12px;color:var(--mut)"><span id="fps">— FPS</span> · bytes sent: <span id="nb">0</span> · last: <span id="lb">—</span></div>
+</div></div></section>
+
+<section id="how"><div class="tag">Pipeline</div><h2>From webcam frame to lit LED, six steps</h2>
+<div class="grid">
+<div class="panel card"><div class="n">01</div><h3>Capture</h3><p>The browser grabs webcam frames, mirrored for a natural view.</p></div>
+<div class="panel card"><div class="n">02</div><h3>Detect</h3><p>MediaPipe Hands returns 21 landmark points for your hand.</p></div>
+<div class="panel card"><div class="n">03</div><h3>Count</h3><p>Each fingertip is compared with its lower joint to see if it is raised.</p></div>
+<div class="panel card"><div class="n">04</div><h3>Filter</h3><p>A rolling buffer of recent counts removes single-frame flicker.</p></div>
+<div class="panel card"><div class="n">05</div><h3>Transmit</h3><p>The LED pattern goes over USB serial as one byte at 9600 baud.</p></div>
+<div class="panel card"><div class="n">06</div><h3>Actuate</h3><p>The Arduino sketch reads the byte and drives pins D2–D6.</p></div></div></section>
+
+<section id="gestures"><div class="tag">Gesture map</div><h2>Two ways to wire a finger count to light</h2>
+<div class="row"><button id="gA" onclick="setMode('A')">Mode A · Single indicator</button><button id="gB" onclick="setMode('B')" class="on">Mode B · Level meter</button></div>
+<div class="panel"><table id="gt"></table></div></section>
+
+<section id="roadmap"><div class="tag">Features</div><h2>What this build includes</h2>
+<div class="grid">
+<div class="panel card"><h3>Smooth tracking</h3><p>Live hand tracking with an on-screen skeleton overlay.</p></div>
+<div class="panel card"><h3>Noise-filtered gestures</h3><p>A vote over recent frames stops a misread frame flipping an LED.</p></div>
+<div class="panel card"><h3>LED effects</h3><p>Steady, blink and chase patterns, with fading LEDs on screen.</p></div>
+<div class="panel card"><h3>Arduino port connect</h3><p>Pick your COM port from the browser with Web Serial.</p></div>
+<div class="panel card"><h3>Demo & test buttons</h3><p>Present without a camera using Demo and the 0–5 buttons.</p></div>
+<div class="panel card"><h3>Live wiring diagram</h3><p>Wires and LEDs light up in sync with the real hardware.</p></div></div></section>
+
+<section id="wiring"><div class="tag">Hardware</div><h2>Wiring the five LEDs</h2>
+<p class="lead">Each LED sits on its own pin through a 220–270Ω resistor, with a shared ground rail back to the Arduino GND. USB powers the board — no external supply needed.</p>
+<div class="panel"><svg viewBox="0 0 560 250" width="100%"><rect x="20" y="15" width="130" height="210" rx="10" fill="#0e5a73"/><text x="85" y="125" text-anchor="middle" style="font-weight:700">ARDUINO UNO</text><g id="wr"></g><text x="400" y="244">GND ► breadboard − rail</text></svg></div>
+<div class="panel" style="margin-top:14px"><table><tr><th>Pin</th><th>Component</th></tr><tr><td>D2</td><td>LED 1 + 270Ω (anode to resistor, cathode to − rail)</td></tr><tr><td>D3</td><td>LED 2 + 270Ω</td></tr><tr><td>D4</td><td>LED 3 + 270Ω</td></tr><tr><td>D5</td><td>LED 4 + 270Ω</td></tr><tr><td>D6</td><td>LED 5 + 270Ω</td></tr><tr><td>GND</td><td>Breadboard − rail</td></tr><tr><td>USB</td><td>Laptop → Arduino (power + serial)</td></tr></table></div></section>
+
+<section id="code"><div class="tag">Source</div><h2>Arduino sketch</h2>
+<p class="lead">Upload this with Arduino IDE (Board: Arduino UNO), then close the Serial Monitor before connecting from the website. The site sends text commands like <code>M7</code> (bit0 = LED1 … bit4 = LED5) and the Arduino answers <code>OK 7</code>, shown in the “Arduino reply” chip.</p>
+<pre id="ino"><pre id="ino">// Hand Gesture LED Control - Arduino UNO (LEDs on D2..D6)
+// Website sends text:  M&lt;mask&gt;  e.g. "M7" = LED1+2+3.   Arduino replies "OK 7"
+const int LED_PINS[5] = {2, 3, 4, 5, 6};
+
+void setMask(int m) {
+  for (int i = 0; i &lt; 5; i++) digitalWrite(LED_PINS[i], (m &gt;&gt; i) &amp; 1);
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.setTimeout(30);
+  for (int i = 0; i &lt; 5; i++) pinMode(LED_PINS[i], OUTPUT);
+  // power-on self test: LEDs chase once, flash, then turn off
+  for (int i = 0; i &lt; 5; i++) { setMask(1 &lt;&lt; i); delay(120); }
+  setMask(31); delay(300); setMask(0);
+  Serial.println("READY");
+}
+
+void loop() {
+  if (Serial.available() &gt; 0) {
+    String s = Serial.readStringUntil('\n');
+    s.trim();
+    if (s.length() == 0) return;
+    if (s[0] == 'M') {
+      int m = s.substring(1).toInt() &amp; 31;
+      setMask(m);
+      Serial.print("OK "); Serial.println(m);
+    } else if (s[0] == 'P') {
+      Serial.println("PONG");
+    }
+  }
+}
+</pre><button onclick="navigator.clipboard.writeText(document.getElementById('ino').innerText).then(()=>toast('Sketch copied',1))">Copy sketch</button>
+<p class="lead" style="margin-top:14px"><b>Port busy?</b> “Failed to open serial port” means another program holds the port — close Arduino IDE Serial Monitor and other tabs using the Arduino, then replug USB.</p></section>
+<div class="panel" style="margin-top:14px"><h3 style="margin-top:0">LEDs not turning on? Check in this order</h3><ol>
+<li><b>Upload this new sketch.</b> An older sketch expects different data, so the LEDs ignore the website. The “Arduino reply” chip turns green when the right sketch is running.</li>
+<li><b>Power-on self-test:</b> after upload (or when the page connects) the 5 LEDs should chase once and flash. If they don’t, it’s wiring: long leg → 270Ω → D2–D6, short leg → − rail, rail → GND.</li>
+<li><b>Serial Monitor test:</b> set 9600 baud + “Newline”, type <code>M31</code> → all LEDs on, <code>M0</code> → off. Close the monitor before using the website.</li>
+<li><b>Hardware test buttons</b> on the page switch LEDs without the camera.</li></ol></div>
+<footer>hand-tracking-system · Webcam · MediaPipe · Arduino</footer><div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<script>
+const $=id=>document.getElementById(id),q=s=>[...document.querySelectorAll(s)],sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(m,ok){const t=$("toast");t.style.background=ok?"#1f9d55":"";t.textContent=(ok?"✓ ":"⚠ ")+m;t.style.display="block";clearTimeout(t._t);t._t=setTimeout(()=>t.style.display="none",5500)}
+// ---- build UI ----
+q(".lampset").forEach(s=>s.innerHTML=[1,2,3,4,5].map(i=>`<div class="lamp" data-i="${i-1}"><i></i>D${i+1}<br>LED ${i}</div>`).join(""));
+$("rigH").innerHTML="<i></i>".repeat(5);
+$("sim").innerHTML=[0,1,2,3,4,5].map(i=>`<button onclick="stopDemo();setCount(${i})">${i}</button>`).join("");
+$("wr").innerHTML=[0,1,2,3,4].map(i=>{const y=40+i*40;return `<text x="158" y="${y-6}">D${i+2}</text><path class="wire" data-w="${i}" d="M150 ${y} H300"/><rect x="300" y="${y-8}" width="50" height="16" rx="3" fill="#b45309"/><text x="310" y="${y+4}" style="font-size:10px">270Ω</text><path class="wire" data-w="${i}" d="M350 ${y} H400"/><circle class="wl" data-w="${i}" cx="425" cy="${y}" r="15"/><text x="450" y="${y+4}">LED ${i+1}</text>`}).join("");
+// ---- state ----
+let mode="B",eff="steady",count=0,base=0,outMask=-1,phase=0,hist=[];
+const maskFor=n=>n==0?0:mode=="A"?1<<(n-1):(1<<n)-1;
+function drawTable(){let r="<tr><th>Fingers</th><th>LEDs on</th></tr>";const E=["✊","☝️","✌️","🤟","🖖","🖐️"];
+ for(let n=0;n<6;n++){const m=maskFor(n);const l=[1,2,3,4,5].filter(i=>m>>(i-1)&1);r+=`<tr data-n="${n}"><td>${E[n]} ${n} finger${n==1?"":"s"}</td><td>${l.length?(l.length==5?"All LEDs on":"LED "+l.join(", ")):"All LEDs off"}</td></tr>`}$("gt").innerHTML=r;hl()}
+function hl(){q("#gt tr[data-n]").forEach(t=>t.classList.toggle("hl",+t.dataset.n==count))}
+function setMode(m){mode=m;["mA","mB","gA","gB"].forEach(i=>$(i).classList.toggle("on",i.slice(1)==m));drawTable();setCount(count,true)}
+function setEff(e){eff=e;[["eS","steady"],["eB","blink"],["eC","chase"]].forEach(([i,k])=>$(i).classList.toggle("on",k==e))}
+function setCount(n,force){if(n==count&&!force)return;if(n!=count){q(".cnt").forEach(c=>{c.textContent=n;c.classList.remove("bump");void c.offsetWidth;c.classList.add("bump")});log0(n)}
+ count=n;base=maskFor(n);q("#rigH i").forEach((p,i)=>p.classList.toggle("up",i<n));hl()}
+function log0(n){}
+function show(m){q(".lamp").forEach(l=>l.classList.toggle("on",!!(m>>l.dataset.i&1)));q("[data-w]").forEach(w=>w.classList.toggle("on",!!(outMaskUI>>w.dataset.w&1)))}
+let outMaskUI=0;
+// effect engine: runs ~every 120ms, only sends when the pattern changes
+setInterval(()=>{phase++;let m=base;
+ if(eff=="blink")m=(phase%6<3)?base:0;
+ else if(eff=="chase"&&base){const on=[0,1,2,3,4].filter(b=>base>>b&1);m=1<<on[phase%on.length]}
+ outMaskUI=m;show(m);if(m!==outMask){outMask=m;send(m)}},120);
+// ---- Arduino serial (text protocol: "M<mask>\n", Arduino answers "OK <mask>") ----
+let port=null,writer=null,reader=null,rl=null,nb=0,gotRep=false;const AV=[0x2341,0x2A03,0x1A86,0x0403,0x10C4,0x239A,0x1B4F],enc=new TextEncoder();
+function chip(id,ok,t){$(id).classList.toggle("ok",ok);$(id).lastChild.textContent=t}
+function serUI(ok){chip("c-ard",ok,"Arduino: "+(ok?"connected":"not connected"));$("serBtn").textContent=ok?"Disconnect Arduino":"Connect Arduino";if(!ok)chip("c-rep",false,"Arduino reply: —")}
+function gotReply(ln){if(!ln)return;gotRep=true;chip("c-rep",true,"Arduino reply: "+ln);if(ln=="READY")outMask=-1}
+async function readLoop(){reader=port.readable.getReader();const dec=new TextDecoder();let buf="";
+ try{for(;;){const{value,done}=await reader.read();if(done)break;buf+=dec.decode(value);let i;while((i=buf.indexOf("\n"))>=0){gotReply(buf.slice(0,i).trim());buf=buf.slice(i+1)}}}catch(e){}
+ finally{try{reader.releaseLock()}catch(e){}reader=null}}
+async function closePort(){try{await reader?.cancel()}catch(e){}try{await rl}catch(e){}try{writer?.releaseLock()}catch(e){}try{await port?.close()}catch(e){}port=writer=reader=rl=null;serUI(false)}
+async function toggleSerial(){
+ if(port){await closePort();return}
+ if(!("serial" in navigator)){toast("Web Serial not supported — use Chrome or Edge on a computer.");return}
+ let p;try{p=await navigator.serial.requestPort($("allp").checked?{}:{filters:AV.map(v=>({usbVendorId:v}))})}
+ catch(e){if(e.name=="NotFoundError"&&!$("allp").checked)toast("No port chosen. If your Arduino is not listed, tick “Show all serial ports”.");else if(e.name!="NotFoundError")toast(e.message);return}
+ let last=null;
+ for(let t=0;t<3;t++){try{if(p.readable||p.writable){try{await p.close()}catch(e){}}
+   await p.open({baudRate:9600,flowControl:"none"});port=p;writer=p.writable.getWriter();gotRep=false;serUI(true);rl=readLoop();toast("Port opened — waiting for Arduino to restart…",1);
+   await sleep(2500);tx("P");outMask=-1;                     // UNO resets when the port opens
+   setTimeout(()=>{if(port&&!gotRep)toast("Port is open but the Arduino is NOT answering. Upload the NEW sketch (gesture_led.ino) to the UNO, then reconnect.")},2500);return}
+  catch(e){last=e;if(e.name=="InvalidStateError"&&p.writable){try{port=p;writer=p.writable.getWriter();serUI(true);rl=readLoop();return}catch(x){}}await sleep(700)}}
+ port=writer=null;serUI(false);toast("Port is BUSY or unavailable. Close Arduino IDE Serial Monitor and other tabs using the Arduino, replug USB, try again. ("+(last&&last.message)+")")}
+async function tx(t){if(!writer)return;try{await writer.write(enc.encode(t+"\n"));$("nb").textContent=++nb;$("lb").textContent=t}catch(e){toast("Serial write failed: "+e.message);closePort()}}
+const send=m=>tx("M"+m);
+if("serial" in navigator)navigator.serial.addEventListener("disconnect",()=>{port=writer=reader=rl=null;serUI(false);toast("Arduino disconnected — check the USB cable")});
+// ---- hardware test ----
+$("hw").innerHTML=[1,2,3,4,5].map(i=>`<button onclick="man(${i-1})">LED ${i}</button>`).join("")+'<button onclick="man(\'on\')">ALL ON</button><button onclick="man(\'off\')">ALL OFF</button><button onclick="chaseTest()">Chase test</button>';
+function man(x){stopDemo();base=x=="on"?31:x=="off"?0:(base^(1<<x))}
+async function chaseTest(){stopDemo();const keep=base;for(const m of [1,2,4,8,16,8,4,2,1,31,0,31,0]){base=m;await sleep(260)}base=keep}
+// ---- demo ----
+let dT=null,dn=0;function demo(){if(dT){stopDemo();return}$("demoBtn").textContent="Stop demo";dT=setInterval(()=>setCount(dn++%6),1400)}
+function stopDemo(){if(dT){clearInterval(dT);dT=null;$("demoBtn").textContent="Demo"}}
+// ---- camera + gesture ----
+let hands,stream,running=false,fc=0,ft=performance.now();
+const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function fingers(l){let n=0;if(d(l[4],l[17])>d(l[3],l[17])*1.05&&d(l[4],l[5])>d(l[3],l[5]))n++;
+ [[8,6],[12,10],[16,14],[20,18]].forEach(([t,p])=>{if(d(l[t],l[0])>d(l[p],l[0])*1.05)n++});return n}
+const ch=[[0,1,2,3,4],[0,5,6,7,8],[9,10,11,12],[13,14,15,16],[0,17,18,19,20],[5,9,13,17]];
+function onRes(r){const cv=$("cv"),c=cv.getContext("2d");cv.width=r.image.width;cv.height=r.image.height;c.clearRect(0,0,cv.width,cv.height);
+ const l=r.multiHandLandmarks&&r.multiHandLandmarks[0];let n=0;
+ if(l){c.strokeStyle="#b6ff3c";c.lineWidth=3;ch.forEach(a=>{c.beginPath();a.forEach((i,k)=>{const x=l[i].x*cv.width,y=l[i].y*cv.height;k?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()});
+  c.fillStyle="#fff";l.forEach(p=>{c.beginPath();c.arc(p.x*cv.width,p.y*cv.height,4,0,7);c.fill()});n=fingers(l)}
+ chip("c-hand",!!l,"Hand: "+(l?"detected":"none"));
+ hist.push(n);if(hist.length>8)hist.shift();                       // rolling buffer
+ const tally={};hist.forEach(v=>tally[v]=(tally[v]||0)+1);const best=+Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];
+ if(hist.length>=6&&tally[best]>=5&&!dT)setCount(best);
+ if(++fc==15){$("fps").textContent=Math.round(15000/(performance.now()-ft))+" FPS";fc=0;ft=performance.now()}}
+async function toggleCam(){
+ if(running){running=false;stream.getTracks().forEach(t=>t.stop());$("vid").srcObject=null;$("ph").style.display="grid";$("camBox").classList.remove("live");$("camBtn").textContent="Enable camera";chip("c-cam",false,"Camera: off");chip("c-hand",false,"Hand: none");return}
+ try{if(typeof Hands==="undefined")throw new Error("Hand-tracking library not loaded (check internet)");stopDemo();
+  stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});$("vid").srcObject=stream;await $("vid").play();
+  if(!hands){hands=new Hands({locateFile:f=>"https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/"+f});hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.5});hands.onResults(onRes)}
+  running=true;$("ph").style.display="none";$("camBox").classList.add("live");$("camBtn").textContent="Stop camera";chip("c-cam",true,"Camera: active");
+  (async function loop(){if(!running)return;try{await hands.send({image:$("vid")})}catch(e){}requestAnimationFrame(loop)})()}
+ catch(e){running=false;chip("c-cam",false,"Camera: error");toast("Camera error: "+e.message)}}
+drawTable();demo();   // hero animates on its own until the camera is enabled
+</script></body></html>
